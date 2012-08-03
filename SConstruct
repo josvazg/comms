@@ -1,6 +1,6 @@
-lib='net'
-libs=[''] #libs=['']
-testlibs=['net']
+lib='comms'
+libs=['Ws2_32.lib'] #libs=['']
+testlibs=['comms']
 
 # Fixed constants
 libdir='lib'
@@ -12,7 +12,7 @@ testTarget=bindir+'/test-'+lib
 extensions='*.c'
 headers=' *.h'
 api='src/conn.h'
-map='bin/conn.map'
+map='bin/comms.map'
 
 # Fixed code
 import os
@@ -44,7 +44,7 @@ env = Environment()
 #env.Append(LIBS = libs)
 
 # Main target: the DLL
-#env.Append(LINKFLAGS='/MAP:bin/conn.map');
+env.Append(LINKFLAGS='/MAP:lib/conn.map');
 mainTarget=env.SharedLibrary(target,srcs, LIBS = libs, LIBPATH='#/'+libdir)
 
 # Test target: unit test program (depends on main target) 

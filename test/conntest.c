@@ -15,7 +15,7 @@ void dieOnError(Error* e) {
 int main(int argc, char* argv[]) {
 	Error err;
 	char buffer[MAXBUF];
-	int w,r,total;
+	int w,r,total=0;
 	Address raddr;
 	char* req="GET / HTTP/1.0\nHost: www.google.com\n\n";
 	Conn c=ConnDial("tcp", "www.google.com:www", err);

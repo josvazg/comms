@@ -1,28 +1,35 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
-
-#ifdef __WIN32
-#include <winsock.h>
-#define MYERRNO WSAGetLastError()
-WSADATA wsaData;
-WSAStartup(0x0202, &wsaData);
-#else
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-//#include <netinet/in.h>
-//#include <arpa/inet.h>
-#include <netdb.h>
-
-void closesocket(int socket) { close(socket); }
-#define MYERRNO errno
-#endif
 
 #include "conn.h"
 
-#define Report snprintf
-#define ERR(e) e,MAX_ERROR_SIZE
+#ifdef _WIN32
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+  #define MYERRNO WSAGetLastError()
+  #define alloca _alloca
+  #define snprintf _snprintf
+  WSADATA wsaData;
+void commsInit(Error err) {
+	err[0]='\0';
+  	memset(&wsaData, 0, sizeof(wsaData));
+  	WSAStartup(0x0202, &wsaData);
+}
+#else
+  #include <errno.h>
+  #include <sys/types.h>
+  #include <sys/socket.h>
+  //#include <netinet/in.h>
+  //#include <arpa/inet.h>
+  #include <netdb.h>
+  #define MYERRNO errno
+void closesocket(int socket) { close(socket); }
+void commsInit(Error err) {
+	err[0]='\0'; 
+}
+#endif
 
 #define CONN_TCP 1
 
@@ -33,9 +40,17 @@ struct Conn_S{
 	struct addrinfo remote;
 };
 
-// errcode returns a crossplatform error code 
-char* errcode() {
+// errdesc returns a crossplatform error description 
+char* errdesc() {
 	return strerror(MYERRNO);
+}
+
+// newError creates an error text 
+void newError(Error err, const char* fmt, ...) {
+	va_list argp;
+	va_start(argp, fmt);
+	vsnprintf(err,MAX_ERROR_SIZE,fmt,argp);
+	va_end(argp);
 }
 
 // Is this on error?, returns 0 when there is no error and !0 otherwise
@@ -61,7 +76,7 @@ void dialTcp(Conn conn, char* addr, Error err) {
 	node=addr;
 	index=last(addr,':');	
 	if(index<0) {
-		Report(ERR(err),"Invalid Address expected 'node:service' but got '%s'!\n",addr);
+		newError(err,"Invalid Address expected 'node:service' but got '%s'!\n",addr);
 		return;
 	} else if(index==0) {
 		node="127.0.0.1";
@@ -78,7 +93,7 @@ void dialTcp(Conn conn, char* addr, Error err) {
     hints.ai_protocol = 0;          /* Any protocol */
 	error=getaddrinfo(node, service, &hints, &result);
     if (error) {
-        Report(ERR(err),"Getaddrinfo: %s\n", gai_strerror(error));
+        newError(err,"Getaddrinfo: %s\n", gai_strerror(error));
         return;
     }
 
@@ -98,7 +113,7 @@ void dialTcp(Conn conn, char* addr, Error err) {
 	}
 	if (rp == NULL) {               /* No address succeeded */
 		conn->s=0;
-        Report(ERR(err),"Could not connect with %s\n",addr);
+        newError(err,"Could not connect with %s\n",addr);
 		return;
     }
 	// Otherwise we are connected
@@ -110,11 +125,12 @@ void dialTcp(Conn conn, char* addr, Error err) {
 // ConnDial connects or prepares a communication on a network 'net' to address 'addr'
 // err is an error placeholder, it must be checked afterwards
 Conn ConnDial(char* net, char* addr, Error err) {
+	Conn conn;
 	err[0]='\0';
 	// Create struct
-	Conn conn=malloc(sizeof(struct Conn_S));
+	conn=malloc(sizeof(struct Conn_S));
 	if(conn==NULL) {
-		Report(ERR(err),"Could not create Conn!\n");
+		newError(err,"Could not create Conn!\n");
 		return NULL;
 	}
 	// clear/zero it
@@ -123,7 +139,7 @@ Conn ConnDial(char* net, char* addr, Error err) {
 	if(strcmp(net,"tcp")==0) { // tcp socket
 		dialTcp(conn,addr,err);
 	} else {
-		Report(ERR(err),"Unknown net '%s'!\n",net);
+		newError(err,"Unknown net '%s'!\n",net);
 	}
 	if(onError(err)) {
 		free(conn);
@@ -151,7 +167,7 @@ void ConnRemoteAddress(Conn conn, Address ra) {
 		inet_ntop(AF_INET6, &addr->sin6_addr, ra, conn->remote.ai_addrlen);
 		port=ntohs(addr->sin6_port);
 	} else {
-		snprintf(ra, MAX_ADDR_SIZE,"Unsupported address type %d!",conn->remote.ai_family);
+		newError(ra, "Unsupported address type %d!",conn->remote.ai_family);
 	}
 	pos=strlen(ra);
 	ra[pos++]=':';
@@ -170,10 +186,12 @@ int ConnRead(Conn conn, char* buf, int size) {
 	if(conn->type==CONN_TCP) {
 		int readed=read(conn->s, buf, size);
 		if(readed<0) {
-			Report(ERR(conn->e),"ConnRead error %s\n",errcode());
+			newError(conn->e,"ConnRead error %s\n",errdesc());
 		}
 		return readed;
 	}
+	newError(conn->e,"Unsupported Conn(ection) state!\n");
+	return -1;
 }
 
 // ConnWrite writes contents from the buf buffer to Conn and
@@ -183,10 +201,12 @@ int ConnWrite(Conn conn, char* buf, int size){
 	if(conn->type==CONN_TCP) {
 		int written=write(conn->s, buf, size);
 		if(written<0) {
-			Report(ERR(conn->e),"ConnWrite error %s\n",errcode());
+			newError(conn->e,"ConnWrite error %s\n",errdesc());
 		}
 		return written;
 	}
+	newError(conn->e,"Unsupported Conn(ection) state!\n");
+	return -1;
 }
 
 // ConnClose closes the Connection/Stream
@@ -194,9 +214,9 @@ int ConnWrite(Conn conn, char* buf, int size){
 // On failure it returns a non zero value and Conn's Error is set
 int ConnClose(Conn conn) {
 	conn->e[0]='\0';
-	if(close(conn->s)) {
+	if(closesocket(conn->s)) {
 		printf("close failed!\n");
-		Report(ERR(conn->e),"Could not close socket %d!\n",conn->s);
+		newError(conn->e,"Could not close socket %d!\n",conn->s);
 		return !0;
 	}
 	memset(conn,0,sizeof(struct Conn_S));

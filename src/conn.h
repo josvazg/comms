@@ -14,6 +14,9 @@ typedef char Error[MAX_ERROR_SIZE];
 // Addresses
 typedef char Address[MAX_ADDR_SIZE];
 
+// commsInit starts the communications (Needed due to Windows API restrictions)
+void commsInit(Error err);
+
 // Is this on error?, returns 0 when there is no error and !0 otherwise
 int onError(Error err);
 
