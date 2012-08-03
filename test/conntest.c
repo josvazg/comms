@@ -18,23 +18,23 @@ int main(int argc, char* argv[]) {
 	int w,r,total=0;
 	Address raddr;
 	char* req="GET / HTTP/1.0\nHost: www.google.com\n\n";
-	Conn c=ConnDial("tcp", "www.google.com:www", err);
+	Conn c=connDial("tcp", "www.google.com:www", err);
 	dieOnError(&err);
-	ConnRemoteAddress(c,raddr);
+	connRemoteAddress(c,raddr);
 	printf("Connected to %s\n",raddr);
-	w=ConnWrite(c,req,strlen(req));
-	dieOnError(ConnError(c));
+	w=connWrite(c,req,strlen(req));
+	dieOnError(connError(c));
 	printf("written %d of %d requests bytes\n",w,(int)strlen(req));
 	
-	for(r=0;(r=ConnRead(c,buffer,MAXBUF))>0;) {
+	for(r=0;(r=connRead(c,buffer,MAXBUF))>0;) {
 		buffer[r]='\0';
 		printf("%s",buffer);
 		total+=r;
 	}
 	printf("%dbytes readed total!\n",total);
 
-	if(ConnClose(c)) {
-		fprintf(stderr,"%s",(char*)ConnError(c));
+	if(connClose(c)) {
+		fprintf(stderr,"%s",(char*)connError(c));
 		return -1;
 	}
 	return 0;

@@ -122,9 +122,9 @@ void dialTcp(Conn conn, char* addr, Error err) {
 	freeaddrinfo(result);
 }
 
-// ConnDial connects or prepares a communication on a network 'net' to address 'addr'
-// err is an error placeholder, it must be checked afterwards
-Conn ConnDial(char* net, char* addr, Error err) {
+// connDial connects or prepares a communication on a network 'net' to address 'addr'
+// On any error, connDial returns NULL and err will have some error message filled in 
+Conn connDial(char* net, char* addr, Error err) {
 	Conn conn;
 	err[0]='\0';
 	// Create struct
@@ -148,40 +148,36 @@ Conn ConnDial(char* net, char* addr, Error err) {
 	return conn;
 }
 
-// ConnError returns the latest Conn's Error
-Error* ConnError(Conn conn) {	
+// connError returns the latest Conn's Error
+// use onError(connError(conn)) to test for conn(ection) errors
+Error* connError(Conn conn) {	
 	return (Error*)conn->e;
 }
 
-// Fills 'ra' with the remote connected address
-void ConnRemoteAddress(Conn conn, Address ra) {
+// Fills raddr with the remote connected (or last received data) address
+// On any error the address is empty and Conn's Error is set
+void connRemoteAddress(Conn conn, Address raddr) {
 	int pos=0;
 	int port=-1;
-	memset(ra,0,MAX_ADDR_SIZE);
+	memset(raddr,0,MAX_ADDR_SIZE);
 	if(conn->remote.ai_family==AF_INET) {
 		struct sockaddr_in *addr=(struct sockaddr_in*)conn->remote.ai_addr;
-		inet_ntop(AF_INET, &addr->sin_addr, ra, conn->remote.ai_addrlen);
+		inet_ntop(AF_INET, &addr->sin_addr, raddr, conn->remote.ai_addrlen);
 		port=ntohs(addr->sin_port);
 	} else if(conn->remote.ai_family==AF_INET6) {
 		struct sockaddr_in6 *addr=(struct sockaddr_in6*)conn->remote.ai_addr;
-		inet_ntop(AF_INET6, &addr->sin6_addr, ra, conn->remote.ai_addrlen);
+		inet_ntop(AF_INET6, &addr->sin6_addr, raddr, conn->remote.ai_addrlen);
 		port=ntohs(addr->sin6_port);
 	} else {
-		newError(ra, "Unsupported address type %d!",conn->remote.ai_family);
+		newError(raddr, "Unsupported address type %d!",conn->remote.ai_family);
 	}
-	pos=strlen(ra);
-	ra[pos++]=':';
-	snprintf(&ra[pos],MAX_ADDR_SIZE-pos,"%d",port);
+	pos=strlen(raddr);
+	snprintf(&raddr[pos],MAX_ADDR_SIZE-pos,":%d",port);
 }
 
-// onConnError is a shortcut for onError(ConnError(conn))
-int onConnError(Conn conn) {
-	return onError(conn->e);
-}
-
-// ConnRead reads contents from Conn to the given buffer and
+// connRead reads contents from conn to the given buffer buf (at most size bytes) and
 // returns the number of bytes read OR -1 and Conn's Error is set
-int ConnRead(Conn conn, char* buf, int size) {
+int connRead(Conn conn, char* buf, int size) {
 	conn->e[0]='\0';
 	if(conn->type==CONN_TCP) {
 		int readed=read(conn->s, buf, size);
@@ -194,9 +190,9 @@ int ConnRead(Conn conn, char* buf, int size) {
 	return -1;
 }
 
-// ConnWrite writes contents from the buf buffer to Conn and
+// connWrite writes contents from the buf buffer to Conn and
 // returns the number of bytes written OR -1 and Conn's Error is set
-int ConnWrite(Conn conn, char* buf, int size){
+int connWrite(Conn conn, char* buf, int size){
 	conn->e[0]='\0';
 	if(conn->type==CONN_TCP) {
 		int written=write(conn->s, buf, size);
@@ -209,10 +205,10 @@ int ConnWrite(Conn conn, char* buf, int size){
 	return -1;
 }
 
-// ConnClose closes the Connection/Stream
-// On success it should return 0
+// connClose closes the Connection/Stream
+// On success it should return 0 and conn is no longer points to valid data, SO DON'T USE IT AGAIN!
 // On failure it returns a non zero value and Conn's Error is set
-int ConnClose(Conn conn) {
+int connClose(Conn conn) {
 	conn->e[0]='\0';
 	if(closesocket(conn->s)) {
 		printf("close failed!\n");

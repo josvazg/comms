@@ -1,12 +1,12 @@
 /**
-	Conn interface symplifies and encapsulates Socket access and other streams types alike
+	Conns interface symplifies and encapsulates Socket access and other streams types alike
     allowing you to use the same API for tcp and udp sockets, plain, SSL, etc
 
 */
 typedef struct Conn_S * Conn;
 
 #define MAX_ERROR_SIZE 256
-#define MAX_ADDR_SIZE 512
+#define MAX_ADDR_SIZE 256
 
 // Error messages
 typedef char Error[MAX_ERROR_SIZE];
@@ -20,28 +20,27 @@ void commsInit(Error err);
 // Is this on error?, returns 0 when there is no error and !0 otherwise
 int onError(Error err);
 
-// ConnDial connects or prepares a communication on a network 'net' to address 'addr'
-// err is an error placeholder, it must be checked afterwards
-Conn ConnDial(char* net, char* addr, Error err);
+// connDial connects or prepares a communication on a network 'net' to address 'addr'
+// On any error, connDial returns NULL and err will have some error message filled in 
+Conn connDial(char* net, char* addr, Error err);
 
-// ConnError returns the latest Conn's Error
-Error* ConnError(Conn conn);
+// connError returns the latest Conn's Error
+// use onError(connError(conn)) to test for conn(ection) errors
+Error* connError(Conn conn);
 
-// Fills 'ra' with the remote connected address
-void ConnRemoteAddress(Conn conn, Address ra);
+// Fills raddr with the remote connected (or last received data) address
+// On any error the address is empty and Conn's Error is set
+void connRemoteAddress(Conn conn, Address raaddr);
 
-// onConnError is a shortcut for onError(ConnError(conn))
-int onConnError(Conn conn);
-
-// ConnRead reads contents from Conn to the given buffer and
+// connRead reads contents from conn to the given buffer buf (at most size bytes) and
 // returns the number of bytes read OR -1 and Conn's Error is set
-int ConnRead(Conn conn, char* buf, int size);
+int connRead(Conn conn, char* buf, int size);
 
-// ConnWrite writes contents from the buf buffer to Conn and
+// connWrite writes contents from the buf buffer to Conn and
 // returns the number of bytes written OR -1 and Conn's Error is set
-int ConnWrite(Conn conn, char* buf, int size);
+int connWrite(Conn conn, char* buf, int size);
 
-// ConnClose closes the Connection/Stream
-// On success it should return 0
-// On failure it returns a non zero value and Conn Error is set
-int ConnClose(Conn conn);
+// connClose closes the Connection/Stream
+// On success it should return 0 and conn is no longer points to valid data, SO DON'T USE IT AGAIN!
+// On failure it returns a non zero value and Conn's Error is set
+int connClose(Conn conn);
