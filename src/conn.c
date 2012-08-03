@@ -5,6 +5,14 @@
 
 #include "conn.h"
 
+// newError creates an error text 
+void newError(Error err, const char* fmt, ...) {
+	va_list argp;
+	va_start(argp, fmt);
+	vsnprintf(err,MAX_ERROR_SIZE,fmt,argp);
+	va_end(argp);
+}
+
 #ifdef _WIN32
   #include <winsock2.h>
   #include <ws2tcpip.h>
@@ -12,10 +20,15 @@
   #define alloca _alloca
   #define snprintf _snprintf
   WSADATA wsaData;
-void commsInit(Error err) {
+int commsInit(Error err) {
+	int r=0;
 	err[0]='\0';
   	memset(&wsaData, 0, sizeof(wsaData));
-  	WSAStartup(0x0202, &wsaData);
+  	r=WSAStartup(0x0202, &wsaData);
+  	if(r) {
+  		newError(err,"WSAStartup failed with error: %d\n", r);
+  	}
+  	return r;
 }
 #else
   #include <errno.h>
@@ -26,8 +39,9 @@ void commsInit(Error err) {
   #include <netdb.h>
   #define MYERRNO errno
 void closesocket(int socket) { close(socket); }
-void commsInit(Error err) {
-	err[0]='\0'; 
+int commsInit(Error err) {
+	err[0]='\0';
+	return 0;
 }
 #endif
 
@@ -43,14 +57,6 @@ struct Conn_S{
 // errdesc returns a crossplatform error description 
 char* errdesc() {
 	return strerror(MYERRNO);
-}
-
-// newError creates an error text 
-void newError(Error err, const char* fmt, ...) {
-	va_list argp;
-	va_start(argp, fmt);
-	vsnprintf(err,MAX_ERROR_SIZE,fmt,argp);
-	va_end(argp);
 }
 
 // Is this on error?, returns 0 when there is no error and !0 otherwise

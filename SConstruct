@@ -44,8 +44,8 @@ env = Environment()
 #env.Append(LIBS = libs)
 
 # Main target: the DLL
-env.Append(LINKFLAGS='/MAP:lib/conn.map');
-mainTarget=env.SharedLibrary(target,srcs, LIBS = libs, LIBPATH='#/'+libdir)
+#env.Append(LINKFLAGS='/MAP:lib/conn.map');
+mainTarget=env.SharedLibrary(target,srcs, LIBS = libs, LIBPATH='#/'+libdir, register=1)
 
 # Test target: unit test program (depends on main target) 
 test=env.Program(testTarget,testsrcs, LIBS=testlibs, LIBPATH='#/'+libdir)
