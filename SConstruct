@@ -1,5 +1,11 @@
+env = Environment()
+
+# Configure this...
 lib='comms'
-libs=['Ws2_32.lib'] #libs=['']
+libs=['']
+# Only in Win32...
+if env['PLATFORM']=='win32':
+	libs=['Ws2_32.lib']
 testlibs=['comms']
 
 # Fixed constants
@@ -32,7 +38,6 @@ testsrcs=[]
 for extension in extensions.split():
     testsrcs+=glob.glob(os.path.join(testdir,extension))
 
-env = Environment()
 
 # Fix bad vc9 detection using the environment variables instead
 #include_path=os.environ['INCLUDE']

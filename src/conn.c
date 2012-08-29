@@ -45,21 +45,21 @@ const char *inetntop(int af, LPSOCKADDR src, char *dst, int size) {
   #include <errno.h>
   #include <sys/types.h>
   #include <sys/socket.h>
-  //#include <netinet/in.h>
-  //#include <arpa/inet.h>
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
   #include <netdb.h>
   #define MYERRNO errno
-void closesocket(int socket) { close(socket); }
+int closesocket(int socket) { return close(socket); }
 int commsInit(Error err) {
 	err[0]='\0';
 	return 0;
 }
-const char *inetntop(int af, struct sockaddr* src, char *dst, int size) {
+const char *inetntop(int af, const void* src, char *dst, socklen_t size) {
 	if(af==AF_INET) {
-		struct sockaddr_in *addr=(struct sockaddr_in*)conn->remote.ai_addr;
+		struct sockaddr_in *addr=(struct sockaddr_in*)src;
 		return inet_ntop(AF_INET, &addr->sin_addr, dst, size);
-	} else if(conn->remote.ai_family==AF_INET6) {
-		struct sockaddr_in6 *addr=(struct sockaddr_in6*)conn->remote.ai_addr;
+	} else if(af==AF_INET6) {
+		struct sockaddr_in6 *addr=(struct sockaddr_in6*)src;
 		return inet_ntop(AF_INET6, &addr->sin6_addr, dst, size);
 	}
 	return NULL;
