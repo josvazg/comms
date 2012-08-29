@@ -23,13 +23,15 @@ int main(int argc, char* argv[]) {
 	commsInit(err);
 	dieOnError(&err);
 	// TCP Connection
-	c=connDial("tcp", "www.google.com:www", err);
+	c=connDial("tcp", "www.google.com:80", err);
 	dieOnError(&err);
 	// What is the final Remote Address?
 	connRemoteAddress(c,raddr);
 	printf("Connected to %s\n",raddr);
 	// Write / send some data (a request)
+	printf("A\n");
 	w=connWrite(c,req,strlen(req));
+	printf("B\n");
 	dieOnError(connError(c));
 	printf("written %d of %d requests bytes\n",w,(int)strlen(req));
 	// Read /recv some data (the response)

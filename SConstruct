@@ -45,7 +45,7 @@ env = Environment()
 
 # Main target: the DLL
 #env.Append(LINKFLAGS='/MAP:lib/conn.map');
-mainTarget=env.SharedLibrary(target,srcs, LIBS = libs, LIBPATH='#/'+libdir, register=1)
+mainTarget=env.SharedLibrary(target,srcs, LIBS = libs, LIBPATH='#/'+libdir) # register=1 falla en WinXP
 
 # Test target: unit test program (depends on main target) 
 test=env.Program(testTarget,testsrcs, LIBS=testlibs, LIBPATH='#/'+libdir)
@@ -76,4 +76,5 @@ Depends(binzip,mainTarget)
 
 # Latest release installation target depends on main target
 latest=Install('latest', [mainTarget, api]) # ,map
+dllplacement=Install('bin', dlls)
 

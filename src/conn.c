@@ -19,6 +19,7 @@ void newError(Error err, const char* fmt, ...) {
   #define MYERRNO WSAGetLastError()
   #define alloca _alloca
   #define snprintf _snprintf
+  
   WSADATA wsaData;
 int commsInit(Error err) {
 	int r=0;
@@ -30,6 +31,16 @@ int commsInit(Error err) {
   	}
   	return r;
 }
+const char *inetntop(int af, LPSOCKADDR src, char *dst, int size) {
+	int len=sizeof(struct sockaddr_in);
+	if(af==AF_INET6) {
+		len=sizeof(struct sockaddr_in6);
+	}
+	if(!WSAAddressToString(src,len,NULL,dst,&size)) {
+		return dst;
+	}
+	return NULL;
+} 
 #else
   #include <errno.h>
   #include <sys/types.h>
@@ -43,6 +54,16 @@ int commsInit(Error err) {
 	err[0]='\0';
 	return 0;
 }
+const char *inetntop(int af, struct sockaddr* src, char *dst, int size) {
+	if(af==AF_INET) {
+		struct sockaddr_in *addr=(struct sockaddr_in*)conn->remote.ai_addr;
+		return inet_ntop(AF_INET, &addr->sin_addr, dst, size);
+	} else if(conn->remote.ai_family==AF_INET6) {
+		struct sockaddr_in6 *addr=(struct sockaddr_in6*)conn->remote.ai_addr;
+		return inet_ntop(AF_INET6, &addr->sin6_addr, dst, size);
+	}
+	return NULL;
+} 
 #endif
 
 #define CONN_TCP 1
@@ -168,15 +189,14 @@ void connRemoteAddress(Conn conn, Address raddr) {
 	memset(raddr,0,MAX_ADDR_SIZE);
 	if(conn->remote.ai_family==AF_INET) {
 		struct sockaddr_in *addr=(struct sockaddr_in*)conn->remote.ai_addr;
-		inet_ntop(AF_INET, &addr->sin_addr, raddr, conn->remote.ai_addrlen);
 		port=ntohs(addr->sin_port);
 	} else if(conn->remote.ai_family==AF_INET6) {
 		struct sockaddr_in6 *addr=(struct sockaddr_in6*)conn->remote.ai_addr;
-		inet_ntop(AF_INET6, &addr->sin6_addr, raddr, conn->remote.ai_addrlen);
 		port=ntohs(addr->sin6_port);
 	} else {
 		newError(raddr, "Unsupported address type %d!",conn->remote.ai_family);
 	}
+	inetntop(conn->remote.ai_family, conn->remote.ai_addr, raddr, MAX_ADDR_SIZE);
 	pos=strlen(raddr);
 	snprintf(&raddr[pos],MAX_ADDR_SIZE-pos,":%d",port);
 }
