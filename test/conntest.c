@@ -29,9 +29,7 @@ int main(int argc, char* argv[]) {
 	connRemoteAddress(c,raddr);
 	printf("Connected to %s\n",raddr);
 	// Write / send some data (a request)
-	printf("A\n");
 	w=connWrite(c,req,strlen(req));
-	printf("B\n");
 	dieOnError(connError(c));
 	printf("written %d of %d requests bytes\n",w,(int)strlen(req));
 	// Read /recv some data (the response)
