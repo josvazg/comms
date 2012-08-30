@@ -55,18 +55,18 @@ const char *addrtext(struct sockaddr* src, char *dst, socklen_t size) {
 	int pos=0;
 	int port=-1;
 	if(src->sa_family==AF_INET) {
-		struct sockaddr_in *addr=(struct sockaddr_in*)src;
-		inet_ntop(AF_INET, &addr->sin_addr, dst, size);
-		port=ntohs(a->sin_port);
+		struct sockaddr_in *saddr=(struct sockaddr_in*)src;
+		inet_ntop(AF_INET, &saddr->sin_addr, dst, size);
+		port=ntohs(saddr->sin_port);
 	} else if(src->sa_family==AF_INET6) {
-		struct sockaddr_in6 *addr=(struct sockaddr_in6*)src;
-		inet_ntop(AF_INET6, &addr->sin6_addr, dst, size);
-		port=ntohs(a->sin6_port);
+		struct sockaddr_in6 *saddr=(struct sockaddr_in6*)src;
+		inet_ntop(AF_INET6, &saddr->sin6_addr, dst, size);
+		port=ntohs(saddr->sin6_port);
 	} else {
 		return NULL;
 	}
-	pos=strlen(addr);
-	snprintf(&addr[pos],MAX_ADDR_SIZE-pos,":%d",port);
+	pos=strlen(dst);
+	snprintf(&dst[pos],MAX_ADDR_SIZE-pos,":%d",port);
 	return dst;
 } 
 #endif
