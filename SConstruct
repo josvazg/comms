@@ -17,7 +17,7 @@ target=libdir+'/'+lib
 testTarget=bindir+'/test-'+lib
 extensions='*.c'
 headers=' *.h'
-api='src/conn.h'
+api='src/comms.h'
 map='bin/comms.map'
 
 # Fixed code
@@ -75,7 +75,7 @@ srczip=Zip(lib+".zip",allsources)
 Depends(srczip,mainTarget)
 
 # Binary Zip target depends on main target
-allbins=['src/conn.h']+glob.glob(os.path.join('bin','*.dll'))+glob.glob(os.path.join('bin','*.so'))
+allbins=[api]+glob.glob(os.path.join('bin','*.dll'))+glob.glob(os.path.join('bin','*.so'))
 binzip=Zip(lib+".bin.zip",allbins)
 Depends(binzip,mainTarget)
 

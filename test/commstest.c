@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../src/conn.h"
+#include "../src/comms.h"
 
 #define MAXBUF 1024
 
@@ -12,7 +12,7 @@ void dieOnError(Error* e) {
 	}
 }
 
-int main(int argc, char* argv[]) {
+int client() {
 	Error err;
 	char buffer[MAXBUF];
 	int w,r,total=0;
@@ -52,4 +52,62 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 	return 0;
+}
+
+void serve(Conn c) {
+	char buffer[MAXBUF];
+	int r,total=0;
+	Address raddr;
+	connAddress(c,raddr);
+	printf("Connection from %s\n",raddr);
+
+	// Read /recv data (the response)
+	for(r=0;(r=connRead(c,buffer,MAXBUF))>0;) {
+		buffer[r]='\0';
+		printf("%s",buffer);
+		total+=r;
+	}
+	printf("%dbytes readed total!\n",total);
+
+    // Close the conn(ection)
+	if(connClose(c)) {
+		fprintf(stderr,"%s",(char*)connError(c));
+		return;
+	}
+}
+
+int server() {
+	Error err;
+	Address addr;
+	Serv s=NULL;
+	Conn c=NULL;
+	
+	// Initialization forced for Windows compatibility
+	commsInit(err);
+	dieOnError(&err);
+
+	// TCP Server
+	s=servNew("tcp", ":1080", err);
+	dieOnError(&err);
+
+	// What is the final Listen Address?
+	/*servAddress(s,addr);
+	printf("Listens on %s\n",addr);*/
+
+	// Listen for a connection
+	c=servListen(s);
+	dieOnError(servError(s));
+	serve(c);
+
+    // Close the server
+	if(servClose(s)) {
+		fprintf(stderr,"%s",(char*)connError(c));
+		return -1;
+	}
+	return 0;
+}
+
+int main(int argc, char* argv[]) {
+	client();
+	server();
 }

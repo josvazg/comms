@@ -11,6 +11,8 @@
 
 typedef struct Conn_S * Conn;
 
+typedef struct Serv_S * Serv;
+
 #define MAX_ERROR_SIZE 256
 #define MAX_ADDR_SIZE 256
 
@@ -55,3 +57,20 @@ COMMS_API int connWrite(Conn conn, char* buf, int size);
 // On success it should return 0 and conn is no longer points to valid data, SO DON'T USE IT AGAIN!
 // On failure it returns a non zero value and Conn's Error is set
 COMMS_API int connClose(Conn conn);
+
+// servNew creates a new server on a network 'net' and address 'addr'
+// On any error, servNew returns NULL and err will have some error message filled in 
+COMMS_API Serv servNew(char* net, char* addr, Error err);
+
+// servError returns the latest Serv's Error
+// use onError(ServError(conn)) to test for server errors
+COMMS_API Error* servError(Serv Serv);
+
+// servListen listens for new connections incoming to Server serv
+// On any error, servListen returns NULL and Serv's Error is set
+COMMS_API Conn servListen(Serv serv);
+
+// servClose closes the Server
+// On success it should return 0 and serv is no longer points to valid data, SO DON'T USE IT AGAIN!
+// On failure it returns a non zero value and Serv's Error is set
+COMMS_API int servClose(Serv Serv);
