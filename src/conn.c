@@ -31,11 +31,8 @@ int commsInit(Error err) {
   	}
   	return r;
 }
-const char *inetntop(int af, LPSOCKADDR src, char *dst, int size) {
-	int len=sizeof(struct sockaddr_in);
-	if(af==AF_INET6) {
-		len=sizeof(struct sockaddr_in6);
-	}
+const char *addrtext(LPSOCKADDR src, char *dst, int size) {
+	int len=addrSize(src->sa_family);
 	if(!WSAAddressToString(src,len,NULL,dst,&size)) {
 		return dst;
 	}
@@ -54,15 +51,23 @@ int commsInit(Error err) {
 	err[0]='\0';
 	return 0;
 }
-const char *inetntop(int af, const void* src, char *dst, socklen_t size) {
-	if(af==AF_INET) {
+const char *addrtext(struct sockaddr* src, char *dst, socklen_t size) {
+	int pos=0;
+	int port=-1;
+	if(src->sa_family==AF_INET) {
 		struct sockaddr_in *addr=(struct sockaddr_in*)src;
-		return inet_ntop(AF_INET, &addr->sin_addr, dst, size);
-	} else if(af==AF_INET6) {
+		inet_ntop(AF_INET, &addr->sin_addr, dst, size);
+		port=ntohs(a->sin_port);
+	} else if(src->sa_family==AF_INET6) {
 		struct sockaddr_in6 *addr=(struct sockaddr_in6*)src;
-		return inet_ntop(AF_INET6, &addr->sin6_addr, dst, size);
+		inet_ntop(AF_INET6, &addr->sin6_addr, dst, size);
+		port=ntohs(a->sin6_port);
+	} else {
+		return NULL;
 	}
-	return NULL;
+	pos=strlen(addr);
+	snprintf(&addr[pos],MAX_ADDR_SIZE-pos,":%d",port);
+	return dst;
 } 
 #endif
 
@@ -70,9 +75,10 @@ const char *inetntop(int af, const void* src, char *dst, socklen_t size) {
 
 struct Conn_S{
 	int type;
+	int ver;
 	int s;
 	Error e;
-	struct addrinfo remote;
+	Address remote;
 };
 
 // errdesc returns a crossplatform error description 
@@ -90,6 +96,21 @@ int last(char* s, char c) {
 	int i=strlen(s);
 	for(;i>=0 && s[i]!=c;i--);
 	return i;	
+}
+
+// addrSize returns the sockaddress size
+int addrSize(int af) {
+	int len=sizeof(struct sockaddr_in);
+	if(af==AF_INET6) {
+		len=sizeof(struct sockaddr_in6);
+	}
+	return len;
+}
+
+// readAddress write the address in saddr as text on addr
+void readAddress(Address addr, struct sockaddr* saddr) {
+	memset(addr,0,MAX_ADDR_SIZE);
+	addrtext(saddr,addr,MAX_ADDR_SIZE);
 }
 
 // dialTcp connects to a TCP socket address 'addr' or fills err
@@ -145,7 +166,8 @@ void dialTcp(Conn conn, char* addr, Error err) {
     }
 	// Otherwise we are connected
 	conn->type=CONN_TCP;
-	memcpy(&conn->remote,rp,sizeof(struct addrinfo));
+	conn->ver=rp->ai_family;
+	readAddress(conn->remote,rp->ai_addr);
 	freeaddrinfo(result);
 }
 
@@ -181,24 +203,30 @@ Error* connError(Conn conn) {
 	return (Error*)conn->e;
 }
 
+// Fills addr with the local address
+// On any error the address is empty and Conn's Error is set
+COMMS_API void connAddress(Conn conn, Address addr) {
+	struct sockaddr *saddr=NULL;
+	int len=addrSize(conn->ver);
+	saddr=alloca(len);
+	if(saddr==NULL) {
+		newError(conn->e,"Can't allocate space for socket address!");
+		return;
+	}
+	if(getsockname(conn->s,saddr,&len)) {
+		newError(conn->e,"Getsockname: %s",errdesc());
+		return;
+	}
+	readAddress(addr,saddr);
+}
+
 // Fills raddr with the remote connected (or last received data) address
 // On any error the address is empty and Conn's Error is set
 void connRemoteAddress(Conn conn, Address raddr) {
-	int pos=0;
-	int port=-1;
-	memset(raddr,0,MAX_ADDR_SIZE);
-	if(conn->remote.ai_family==AF_INET) {
-		struct sockaddr_in *addr=(struct sockaddr_in*)conn->remote.ai_addr;
-		port=ntohs(addr->sin_port);
-	} else if(conn->remote.ai_family==AF_INET6) {
-		struct sockaddr_in6 *addr=(struct sockaddr_in6*)conn->remote.ai_addr;
-		port=ntohs(addr->sin6_port);
-	} else {
-		newError(raddr, "Unsupported address type %d!",conn->remote.ai_family);
+	snprintf(raddr,MAX_ADDR_SIZE,"%s",conn->remote);
+	if(strlen(raddr)==0) {
+		newError(conn->e,"Can't get a Remote Address!");
 	}
-	inetntop(conn->remote.ai_family, conn->remote.ai_addr, raddr, MAX_ADDR_SIZE);
-	pos=strlen(raddr);
-	snprintf(&raddr[pos],MAX_ADDR_SIZE-pos,":%d",port);
 }
 
 // connRead reads contents from conn to the given buffer buf (at most size bytes) and
@@ -206,7 +234,8 @@ void connRemoteAddress(Conn conn, Address raddr) {
 int connRead(Conn conn, char* buf, int size) {
 	conn->e[0]='\0';
 	if(conn->type==CONN_TCP) {
-		int readed=read(conn->s, buf, size);
+		// WinXP (at least) doesn't support read on a socket, so we use recv instead
+		int readed=recv(conn->s, buf, size,0);
 		if(readed<0) {
 			newError(conn->e,"ConnRead error %s\n",errdesc());
 		}
@@ -221,7 +250,8 @@ int connRead(Conn conn, char* buf, int size) {
 int connWrite(Conn conn, char* buf, int size){
 	conn->e[0]='\0';
 	if(conn->type==CONN_TCP) {
-		int written=write(conn->s, buf, size);
+		// WinXP (at least) doesn't support write on a socket, so we use send instead
+		int written=send(conn->s, buf, size,0);
 		if(written<0) {
 			newError(conn->e,"ConnWrite error %s\n",errdesc());
 		}

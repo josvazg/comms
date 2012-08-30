@@ -35,9 +35,13 @@ COMMS_API Conn connDial(char* net, char* addr, Error err);
 // use onError(connError(conn)) to test for conn(ection) errors
 COMMS_API Error* connError(Conn conn);
 
+// Fills addr with the local address
+// On any error the address is empty and Conn's Error is set
+COMMS_API void connAddress(Conn conn, Address addr);
+
 // Fills raddr with the remote connected (or last received data) address
 // On any error the address is empty and Conn's Error is set
-COMMS_API void connRemoteAddress(Conn conn, Address raaddr);
+COMMS_API void connRemoteAddress(Conn conn, Address raddr);
 
 // connRead reads contents from conn to the given buffer buf (at most size bytes) and
 // returns the number of bytes read OR -1 and Conn's Error is set
