@@ -22,10 +22,23 @@ const char *addr2text(LPSOCKADDR src, char *dst, int size);
   #include <arpa/inet.h>
   #include <netdb.h>
   #define MYERRNO errno 
+  #define error2string strerror_r
 int closesocket(int socket);
 int commsInit(Error err);
 const char *addr2text(struct sockaddr* src, char *dst, socklen_t size);
 #endif
+
+#define ERRDESC(v) error2string(MYERRNO,v,MAX_ERROR_SIZE)
+
+// Common Socket wrapper
+struct CommonSocket_S {
+  int type;
+  int ver;
+  int s;
+  Error e;
+};
+
+typedef struct CommonSocket_S * CommonSocket;
 
 // Connection Structure
 struct Conn_S {
@@ -37,10 +50,10 @@ struct Conn_S {
 };
 
 /* Common helper functions */
-char* errdesc();
 int onError(Error err);
 int last(char* s, char c);
 int addrSize(int af);
 void writeAddress(Address addr, struct sockaddr* saddr);
 struct addrinfo* solveAddress(char* addr, Error err, int type, char* defaddr);
-int closeEndPoint(int s, Error err, void* ptr,int size);
+int sockClose(CommonSocket cs, int size);
+void sockAddress(CommonSocket cs, Address addr);

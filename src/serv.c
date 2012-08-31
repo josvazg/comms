@@ -32,12 +32,14 @@ void serverTcp(Serv serv, char* addr, Error err) {
   	// SOCKET
   	sockfd=socket(PF_INET,SOCK_STREAM, 0);
   	if(sockfd<0) {
-  		newError(err,"Socket: %s",errdesc());
+  		Error e;
+  		newError(err,"Socket: %s",ERRDESC(e));
   		return;
   	}
   	// SO_REUSEADDR
   	if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const void*)&reuseaddr, sizeof(reuseaddr))<0) {
-  		newError(err,"Setsockopt SO_REUSEADDR: %s",errdesc());
+  		Error e;
+  		newError(err,"Setsockopt SO_REUSEADDR: %s",ERRDESC(e));
   		return;
   	}
   	// BIND
@@ -50,13 +52,15 @@ void serverTcp(Serv serv, char* addr, Error err) {
   		return;
   	}
   	saddr=ainfo->ai_addr;
-  	if(bind(sockfd, (struct sockaddr*)saddr, sizeof(saddr))<0) {
-  		newError(err,"Bind: %s",errdesc());
+  	if(bind(sockfd, (struct sockaddr*)saddr, ainfo->ai_addrlen)<0) {
+  		Error e;
+  		newError(err,"Bind: %s",ERRDESC(e));
   		return;
 	}
   	// LISTEN
   	if(listen(sockfd,LISTEN_QUEUE_SIZE)<0) {
-  		newError(err,"Listen: %s",errdesc());
+  		Error e;
+  		newError(err,"Listen: %s",ERRDESC(e));
   		return;
 	}
 	serv->s=sockfd;
@@ -98,14 +102,23 @@ Error* servError(Serv serv) {
 	return (Error*)serv->e;
 }
 
+// servAddress fills addr where the server is listening on
+// On any error, servListen returns NULL and Serv's Error is set
+void servAddress(Serv serv, Address addr) {
+	sockAddress((CommonSocket)serv,addr);
+}
+
 // servListen listens and returns any incomming connection to the given server
 // On any error, servListen returns NULL and Serv's Error is set
 Conn servListen(Serv serv) {
 	struct sockaddr* saddr;
 	Conn conn;
 	int len;
-	if(accept(serv->s,NULL,NULL)<0) {
-		newError(serv->e,"Accept: %s\n",errdesc());
+	int sockfd;
+	sockfd=accept(serv->s,NULL,NULL);
+	if(sockfd<0) {
+		Error e;
+		newError(serv->e,"Accept: %s\n",ERRDESC(e));
 		return NULL;
 	}
 	len=addrSize(serv->ver);
@@ -114,8 +127,9 @@ Conn servListen(Serv serv) {
 		newError(serv->e,"Could not store connecting socket address!\n");
 		return NULL;
 	}
-	if(getpeername(serv->ver,saddr,&len)<0) {
-		newError(serv->e,"Could not get remote connecting address!\n");
+	if(getpeername(sockfd,saddr,&len)<0) {
+		Error e;
+		newError(serv->e,"Getpeername: %s\n",ERRDESC(e));
 		return NULL;
 	}
 	conn=malloc(sizeof(struct Conn_S));
@@ -126,6 +140,7 @@ Conn servListen(Serv serv) {
 	memset(conn,sizeof(struct Conn_S),0);
 	conn->type=serv->type;
 	conn->ver=serv->ver;
+	conn->s=sockfd;
 	writeAddress(conn->remote,saddr);
 	return conn;
 }
@@ -134,5 +149,5 @@ Conn servListen(Serv serv) {
 // On success it should return 0 and serv is no longer points to valid data, SO DON'T USE IT AGAIN!
 // On failure it returns a non zero value and Serv's Error is set
 int servClose(Serv serv) {
-	return closeEndPoint(serv->s,serv->e,serv,sizeof(struct Serv_S));
+	return sockClose((CommonSocket)serv,sizeof(struct Serv_S));
 }

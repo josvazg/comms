@@ -12,6 +12,10 @@ int commsInit(Error err) {
   	}
   	return r;
 }
+const char* error2string(int errcode, char *buf, int size) {
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,0,errcode,0,buf,size,0);
+	return buf;
+}
 const char *addr2text(LPSOCKADDR src, char *dst, int size) {
 	int len=addrSize(src->sa_family);
 	if(!WSAAddressToString(src,len,NULL,dst,&size)) {
@@ -51,11 +55,6 @@ void newError(Error err, const char* fmt, ...) {
 	va_start(argp, fmt);
 	vsnprintf(err,MAX_ERROR_SIZE,fmt,argp);
 	va_end(argp);
-}
-
-// errdesc returns a crossplatform error description 
-char* errdesc() {
-	return strerror(MYERRNO);
 }
 
 // Is this on error?, returns 0 when there is no error and !0 otherwise
@@ -101,11 +100,12 @@ struct addrinfo* solveAddress(char* addr, Error err, int type, char* defaddr) {
 		return NULL;
 	} else if(index==0) {
 		node=defaddr;
+	} else {
+		node=alloca(index+2); // clone the node part from the begining to the ':' index
+		memset(node,0,index+2);
+		memcpy(node,addr,index);
 	}
 	service=&addr[index+1]; // service points to the port/service end of addr
-	node=alloca(index+2); // clone the node part from the begining to the ':' index
-	memset(node,0,index+2);
-	memcpy(node,addr,index);
 	memset(&hints, 0, sizeof(struct addrinfo));
 	// Name solving...
     hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
@@ -120,14 +120,31 @@ struct addrinfo* solveAddress(char* addr, Error err, int type, char* defaddr) {
 	return result;
 }
 
-// closeEndPoint closes Connections and Servers (endpoints)
-int closeEndPoint(int s, Error err, void* ptr,int size) {
-	err[0]='\0';
-	if(closesocket(s)) {
-		newError(err,"Could not close socket %d!\n",s);
+// sockClose closes Connections and Servers (endpoints)
+int sockClose(CommonSocket cs, int size) {
+	cs->e[0]='\0';
+	if(closesocket(cs->s)) {
+		newError(cs->e,"Could not close socket %d!\n",cs->s);
 		return !0;
 	}
-	memset(ptr,0,size);
-	free(ptr);
+	memset(cs,0,size);
+	free(cs);
 	return 0;
+}
+
+// sockAddress fills addr with the socket's local address
+void sockAddress(CommonSocket cs, Address addr) {
+	struct sockaddr *saddr=NULL;
+	int len=addrSize(cs->ver);
+	saddr=alloca(len);
+	if(saddr==NULL) {
+		newError(cs->e,"Can't allocate space for socket address!");
+		return;
+	}
+	if(getsockname(cs->s,saddr,&len)) {
+		Error e;
+		newError(cs->e,"Getsockname: %s",ERRDESC(e));
+		return;
+	}
+	writeAddress(addr,saddr);
 }

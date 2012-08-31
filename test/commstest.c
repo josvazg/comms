@@ -91,8 +91,8 @@ int server() {
 	dieOnError(&err);
 
 	// What is the final Listen Address?
-	/*servAddress(s,addr);
-	printf("Listens on %s\n",addr);*/
+	servAddress(s,addr);
+	printf("Listens on %s\n",addr);
 
 	// Listen for a connection
 	c=servListen(s);
@@ -108,6 +108,6 @@ int server() {
 }
 
 int main(int argc, char* argv[]) {
-	client();
+	//client();
 	server();
 }

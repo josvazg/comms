@@ -4,7 +4,7 @@
 // dialTcp connects to a TCP socket address 'addr' or fills err
 void dialTcp(Conn conn, char* addr, Error err) {
     struct addrinfo *results, *rp;
-	results=solveAddress(addr,err,SOCK_STREAM,"127.0.0.1");
+	results=solveAddress(addr,err,SOCK_STREAM,"localhost");
 	if(onError(err)) {
 		return;
 	}
@@ -73,18 +73,7 @@ Error* connError(Conn conn) {
 // Fills addr with the local address
 // On any error the address is empty and Conn's Error is set
 void connAddress(Conn conn, Address addr) {
-	struct sockaddr *saddr=NULL;
-	int len=addrSize(conn->ver);
-	saddr=alloca(len);
-	if(saddr==NULL) {
-		newError(conn->e,"Can't allocate space for socket address!");
-		return;
-	}
-	if(getsockname(conn->s,saddr,&len)) {
-		newError(conn->e,"Getsockname: %s",errdesc());
-		return;
-	}
-	writeAddress(addr,saddr);
+	sockAddress((CommonSocket)conn,addr);
 }
 
 // Fills raddr with the remote connected (or last received data) address
@@ -104,7 +93,8 @@ int connRead(Conn conn, char* buf, int size) {
 		// WinXP (at least) doesn't support read on a socket, so we use recv instead
 		int readed=recv(conn->s, buf, size,0);
 		if(readed<0) {
-			newError(conn->e,"ConnRead error %s\n",errdesc());
+			Error e;
+			newError(conn->e,"ConnRead error %s\n",ERRDESC(e));
 		}
 		return readed;
 	}
@@ -120,7 +110,8 @@ int connWrite(Conn conn, char* buf, int size){
 		// WinXP (at least) doesn't support write on a socket, so we use send instead
 		int written=send(conn->s, buf, size,0);
 		if(written<0) {
-			newError(conn->e,"ConnWrite error %s\n",errdesc());
+			Error e;
+			newError(conn->e,"ConnWrite error %s\n",ERRDESC(e));
 		}
 		return written;
 	}
@@ -132,7 +123,7 @@ int connWrite(Conn conn, char* buf, int size){
 // On success it should return 0 and conn is no longer points to valid data, SO DON'T USE IT AGAIN!
 // On failure it returns a non zero value and Conn's Error is set
 int connClose(Conn conn) {
-	return closeEndPoint(conn->s,conn->e,conn,sizeof(struct Conn_S));
+	return sockClose((CommonSocket)conn,sizeof(struct Conn_S));
 }
 
 
