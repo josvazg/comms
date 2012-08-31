@@ -1,5 +1,5 @@
 #Comms
-Simple C crossplatform communications library so that you can forget about network suff (tcp/udp/ssl, etc) and focus on your program communications with others from a simpler and higher level of asbtraction.
+Simple C crossplatform communications library so that you can forget about network suff (tcp/udp/ssl, etc) and focus on your program communications from a simpler and higher level of asbtraction.
 
 ##Tested on
 * Linux (Ubuntu)
