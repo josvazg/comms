@@ -30,22 +30,21 @@ const char *addr2text(struct sockaddr* src, char *dst, socklen_t size);
 
 #define ERRDESC(v) error2string(MYERRNO,v,MAX_ERROR_SIZE)
 
-// Common Socket wrapper
-struct CommonSocket_S {
+#define FILE_TYPE SOCK_ANY
+
+// IO
+struct IO_S {
   int type;
-  int ver;
   int s;
   Error e;
 };
 
-typedef struct CommonSocket_S * CommonSocket;
-
 // Connection Structure
 struct Conn_S {
 	int type;
-	int ver;
 	int s;
 	Error e;
+  int ver;
 	Address remote;
 };
 

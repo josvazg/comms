@@ -17,9 +17,9 @@
 
 struct Serv_S{
 	int type;
-	int ver;
 	int s;
 	Error e;
+	int ver;
 };
 
 // serverTcp binds to a TCP server socket address 'addr' or fills err
@@ -105,7 +105,7 @@ Error* servError(Serv serv) {
 // servAddress fills addr where the server is listening on
 // On any error, servListen returns NULL and Serv's Error is set
 void servAddress(Serv serv, Address addr) {
-	sockAddress((CommonSocket)serv,addr);
+	sockAddress((IO)serv,addr);
 }
 
 // servListen listens and returns any incomming connection to the given server
@@ -149,5 +149,5 @@ Conn servListen(Serv serv) {
 // On success it should return 0 and serv is no longer points to valid data, SO DON'T USE IT AGAIN!
 // On failure it returns a non zero value and Serv's Error is set
 int servClose(Serv serv) {
-	return sockClose((CommonSocket)serv,sizeof(struct Serv_S));
+	return sockClose((IO)serv,sizeof(struct Serv_S));
 }

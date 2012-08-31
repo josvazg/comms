@@ -120,30 +120,18 @@ struct addrinfo* solveAddress(char* addr, Error err, int type, char* defaddr) {
 	return result;
 }
 
-// sockClose closes Connections and Servers (endpoints)
-int sockClose(CommonSocket cs, int size) {
-	cs->e[0]='\0';
-	if(closesocket(cs->s)) {
-		newError(cs->e,"Could not close socket %d!\n",cs->s);
-		return !0;
-	}
-	memset(cs,0,size);
-	free(cs);
-	return 0;
-}
-
 // sockAddress fills addr with the socket's local address
-void sockAddress(CommonSocket cs, Address addr) {
+void sockAddress(IO s, Address addr) {
 	struct sockaddr *saddr=NULL;
-	int len=addrSize(cs->ver);
+	int len=addrSize(s->ver);
 	saddr=alloca(len);
 	if(saddr==NULL) {
-		newError(cs->e,"Can't allocate space for socket address!");
+		newError(s->e,"Can't allocate space for socket address!");
 		return;
 	}
-	if(getsockname(cs->s,saddr,&len)) {
+	if(getsockname(s->s,saddr,&len)) {
 		Error e;
-		newError(cs->e,"Getsockname: %s",ERRDESC(e));
+		newError(s->e,"Getsockname: %s",ERRDESC(e));
 		return;
 	}
 	writeAddress(addr,saddr);

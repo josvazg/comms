@@ -73,7 +73,7 @@ Error* connError(Conn conn) {
 // Fills addr with the local address
 // On any error the address is empty and Conn's Error is set
 void connAddress(Conn conn, Address addr) {
-	sockAddress((CommonSocket)conn,addr);
+	sockAddress((IO)conn,addr);
 }
 
 // Fills raddr with the remote connected (or last received data) address
@@ -123,7 +123,7 @@ int connWrite(Conn conn, char* buf, int size){
 // On success it should return 0 and conn is no longer points to valid data, SO DON'T USE IT AGAIN!
 // On failure it returns a non zero value and Conn's Error is set
 int connClose(Conn conn) {
-	return sockClose((CommonSocket)conn,sizeof(struct Conn_S));
+	return sockClose((IO)conn,sizeof(struct Conn_S));
 }
 
 

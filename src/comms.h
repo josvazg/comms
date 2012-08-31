@@ -9,6 +9,8 @@
   #define COMMS_API
 #endif
 
+typedef struct IO_S * IO;
+
 typedef struct Conn_S * Conn;
 
 typedef struct Serv_S * Serv;
@@ -84,3 +86,20 @@ COMMS_API Conn servListen(Serv serv);
 // On success it should return 0 and serv is no longer points to valid data, SO DON'T USE IT AGAIN!
 // On failure it returns a non zero value and Serv's Error is set
 COMMS_API int servClose(Serv Serv);
+
+// ioError returns the latest IO Error
+// use onError(ioError(req)) to test for IO errors
+COMMS_API Error* ioError(IO io);
+
+// ioRead reads contents from io to the given buffer buf (at most size bytes) and
+// returns the number of bytes read OR -1 and IO's Error is set
+COMMS_API int ioRead(IO io, char* buf, int size);
+
+// ioWrite writes contents from the buf buffer to IO and
+// returns the number of bytes written OR -1 and IO's Error is set
+COMMS_API int ioWrite(IO io, char* buf, int size);
+
+// ioClose closes the IO
+// On success it should return 0 and io no longer points to valid data, SO DON'T USE IT AGAIN!
+// On failure it returns a non zero value and IO's Error is set
+COMMS_API int ioClose(IO io);
