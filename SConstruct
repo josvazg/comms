@@ -81,5 +81,4 @@ Depends(binzip,mainTarget)
 
 # Latest release installation target depends on main target
 latest=Install('latest', [mainTarget, api]) # ,map
-dllplacement=Install('bin', dlls)
 
