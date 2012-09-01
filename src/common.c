@@ -49,6 +49,20 @@ const char *addr2text(struct sockaddr* src, char *dst, socklen_t size) {
 }
 #endif
 
+// sizeOfType gives the size of type
+int sizeOfType(int type) {
+	switch(type) {
+		case SOCKSTREAM_TYPE:
+		case SOCKDGRAM_TYPE:
+			return sizeof(struct Conn_S);
+		case SERVSOCKSTREAM_TYPE:
+			return sizeof(struct Serv_S);
+		case FILE_TYPE:
+			return sizeof(struct IO_S);
+	}
+	return 0;
+}
+
 // newError creates an error text 
 void newError(Error err, const char* fmt, ...) {
 	va_list argp;
@@ -121,17 +135,17 @@ struct addrinfo* solveAddress(char* addr, Error err, int type, char* defaddr) {
 }
 
 // sockAddress fills addr with the socket's local address
-void sockAddress(IO s, Address addr) {
+void sockAddress(Sock sock, Address addr) {
 	struct sockaddr *saddr=NULL;
-	int len=addrSize(s->ver);
+	int len=addrSize(sock->ver);
 	saddr=alloca(len);
 	if(saddr==NULL) {
-		newError(s->e,"Can't allocate space for socket address!");
+		newError(sock->e,"Can't allocate space for socket address!");
 		return;
 	}
-	if(getsockname(s->s,saddr,&len)) {
+	if(getsockname(sock->s,saddr,&len)) {
 		Error e;
-		newError(s->e,"Getsockname: %s",ERRDESC(e));
+		newError(sock->e,"Getsockname: %s",ERRDESC(e));
 		return;
 	}
 	writeAddress(addr,saddr);

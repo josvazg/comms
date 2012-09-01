@@ -30,7 +30,10 @@ const char *addr2text(struct sockaddr* src, char *dst, socklen_t size);
 
 #define ERRDESC(v) error2string(MYERRNO,v,MAX_ERROR_SIZE)
 
-#define FILE_TYPE SOCK_ANY
+#define SOCKSTREAM_TYPE 1
+#define SOCKDGRAM_TYPE 2
+#define SERVSOCKSTREAM_TYPE 3
+#define FILE_TYPE 4
 
 // IO
 struct IO_S {
@@ -39,7 +42,17 @@ struct IO_S {
   Error e;
 };
 
-// Connection Structure
+typedef struct Sock_S * Sock;
+
+// Socket
+struct Sock_S {
+  int type;
+  int s;
+  Error e;
+  int ver;
+};
+
+// Connection
 struct Conn_S {
 	int type;
 	int s;
@@ -48,11 +61,18 @@ struct Conn_S {
 	Address remote;
 };
 
+// Server
+struct Serv_S{
+  int type;
+  int s;
+  Error e;
+  int ver;
+};
+
 /* Common helper functions */
 int onError(Error err);
 int last(char* s, char c);
 int addrSize(int af);
 void writeAddress(Address addr, struct sockaddr* saddr);
 struct addrinfo* solveAddress(char* addr, Error err, int type, char* defaddr);
-int sockClose(CommonSocket cs, int size);
-void sockAddress(CommonSocket cs, Address addr);
+void sockAddress(Sock sock, Address addr);

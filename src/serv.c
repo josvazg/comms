@@ -15,13 +15,6 @@
   #include <netdb.h>
 #endif
 
-struct Serv_S{
-	int type;
-	int s;
-	Error e;
-	int ver;
-};
-
 // serverTcp binds to a TCP server socket address 'addr' or fills err
 void serverTcp(Serv serv, char* addr, Error err) {
 	struct addrinfo *ainfo;
@@ -63,8 +56,8 @@ void serverTcp(Serv serv, char* addr, Error err) {
   		newError(err,"Listen: %s",ERRDESC(e));
   		return;
 	}
+	serv->type=SOCKSTREAM_TYPE;
 	serv->s=sockfd;
-	serv->type=SOCK_STREAM;
 	serv->ver=saddr->sa_family;
 	freeaddrinfo(ainfo);
 }
@@ -105,7 +98,7 @@ Error* servError(Serv serv) {
 // servAddress fills addr where the server is listening on
 // On any error, servListen returns NULL and Serv's Error is set
 void servAddress(Serv serv, Address addr) {
-	sockAddress((IO)serv,addr);
+	sockAddress((Sock)serv,addr);
 }
 
 // servListen listens and returns any incomming connection to the given server
@@ -149,5 +142,5 @@ Conn servListen(Serv serv) {
 // On success it should return 0 and serv is no longer points to valid data, SO DON'T USE IT AGAIN!
 // On failure it returns a non zero value and Serv's Error is set
 int servClose(Serv serv) {
-	return sockClose((IO)serv,sizeof(struct Serv_S));
+	return ioClose((IO)serv);
 }

@@ -4,6 +4,7 @@ Simple C crossplatform communications library so that you can forget about netwo
 ##Tested on
 * Linux (Ubuntu)
 * Windows XP
+* Mac OS X (Intel, 10.7)
 
 ###Notes
 Currently only basic TCP client and servers are supported (IPv4 and IPv6), but the plan is to extend support to UDP, multicast-UDP and as a compilation option, TLS support (this using GnuTLS)

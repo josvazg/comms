@@ -32,7 +32,7 @@ void dialTcp(Conn conn, char* addr, Error err) {
 		return;
     }
 	// Otherwise we are connected
-	conn->type=rp->ai_socktype;
+	conn->type=SOCKSTREAM_TYPE;
 	conn->ver=rp->ai_family;
 	writeAddress(conn->remote,rp->ai_addr);
 	freeaddrinfo(results);
@@ -73,7 +73,7 @@ Error* connError(Conn conn) {
 // Fills addr with the local address
 // On any error the address is empty and Conn's Error is set
 void connAddress(Conn conn, Address addr) {
-	sockAddress((IO)conn,addr);
+	sockAddress((Sock)conn,addr);
 }
 
 // Fills raddr with the remote connected (or last received data) address
@@ -88,42 +88,20 @@ void connRemoteAddress(Conn conn, Address raddr) {
 // connRead reads contents from conn to the given buffer buf (at most size bytes) and
 // returns the number of bytes read OR -1 and Conn's Error is set
 int connRead(Conn conn, char* buf, int size) {
-	conn->e[0]='\0';
-	if(conn->type==SOCK_STREAM) {
-		// WinXP (at least) doesn't support read on a socket, so we use recv instead
-		int readed=recv(conn->s, buf, size,0);
-		if(readed<0) {
-			Error e;
-			newError(conn->e,"ConnRead error %s\n",ERRDESC(e));
-		}
-		return readed;
-	}
-	newError(conn->e,"Unsupported Conn(ection) state!\n");
-	return -1;
+	return ioRead((IO)conn,buf,size);
 }
 
 // connWrite writes contents from the buf buffer to Conn and
 // returns the number of bytes written OR -1 and Conn's Error is set
 int connWrite(Conn conn, char* buf, int size){
-	conn->e[0]='\0';
-	if(conn->type==SOCK_STREAM) {
-		// WinXP (at least) doesn't support write on a socket, so we use send instead
-		int written=send(conn->s, buf, size,0);
-		if(written<0) {
-			Error e;
-			newError(conn->e,"ConnWrite error %s\n",ERRDESC(e));
-		}
-		return written;
-	}
-	newError(conn->e,"Unsupported Conn(ection) state!\n");
-	return -1;
+	return ioWrite((IO)conn,buf,size);
 }
 
 // connClose closes the Connection/Stream
 // On success it should return 0 and conn is no longer points to valid data, SO DON'T USE IT AGAIN!
 // On failure it returns a non zero value and Conn's Error is set
 int connClose(Conn conn) {
-	return sockClose((IO)conn,sizeof(struct Conn_S));
+	return ioClose((IO)conn);
 }
 
 
