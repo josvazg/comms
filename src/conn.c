@@ -54,6 +54,8 @@ Conn connDial(char* net, char* addr, Error err) {
     // dial on the given 'net' network
 	if(strcmp(net,"tcp")==0) { // tcp socket
 		dialTcp(conn,addr,err);
+    } else if(strcmp(net,"udp")==0) { // udp socket
+		dialUdp(conn,addr,err);
 	} else {
 		newError(err,"Unknown net '%s'!\n",net);
 	}

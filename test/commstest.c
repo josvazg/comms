@@ -12,31 +12,33 @@ void dieOnError(char *who, Error* e) {
 	}
 }
 
-int client() {
+int client(char* type) {
 	Error err;
 	char buffer[MAXBUF];
 	int w,r,total=0;
 	Address addr,raddr;
 	char* req="GET / HTTP/1.0\nHost: www.someserver.com\n\n";
 	Conn c=NULL;
+	char prefix[64];
+	snprintf(prefix,64,"Client%s",type);
 	
 	// Initialization forced for Windows compatibility
 	commsInit(err);
-	dieOnError("CLIENT",&err);
+	dieOnError(prefix,&err);
 
 	// TCP Connection
-	c=connDial("tcp", ":1080", err);
-	dieOnError("CLIENT",&err);
+	c=connDial(type, ":1080", err);
+	dieOnError(prefix,&err);
 
 	// What is the final Local & Remote Address?
 	connAddress(c,addr);
 	connRemoteAddress(c,raddr);
-	printf("CLIENT:%s connected to %s\n",addr,raddr);
+	printf("%s:%s connected to %s\n",prefix,addr,raddr);
 
 	// Write / send some data (a request)
 	w=connWrite(c,req,strlen(req));
-	dieOnError("CLIENT",connError(c));
-	printf("CLIENT: written %d of %d requests bytes\n",w,(int)strlen(req));
+	dieOnError(prefix,connError(c));
+	printf("%s: written %d of %d requests bytes\n",prefix,w,(int)strlen(req));
 
 	// Read /recv data (the response)
 	for(r=0;(r=connRead(c,buffer,MAXBUF))>0;) {
@@ -44,74 +46,82 @@ int client() {
 		printf("%s",buffer);
 		total+=r;
 	}
-	printf("CLIENT: %dbytes readed total!\n",total);
+	printf("%s: %dbytes readed total!\n",prefix,total);
 
     // Close the conn(ection)
 	if(connClose(c)) {
-		dieOnError("CLIENT",connError(c));
+		dieOnError(prefix,connError(c));
 	}
 	return 0;
 }
 
-void serve(Conn c) {
+void serve(Conn c, char* type) {
 	char buffer[MAXBUF];
 	int r=0,w=0;
 	Address raddr;
+	char prefix[64];
+	snprintf(prefix,64,"Server%s",type);
+
 	connAddress(c,raddr);
-	printf("SERVER: Connection from %s\n",raddr);
+	printf("%s: Connection from %s\n",prefix, raddr);
 
 	// Read /recv data (the response)
 	if((r=connRead(c,buffer,MAXBUF))>0) {
 		buffer[r]='\0';
 		printf("%s",buffer);
 	}
-	printf("SERVER: %dbytes readed!\n",r);
+	printf("%s: %dbytes readed!\n",prefix,r);
 	// Echo reply
 	w=connWrite(c,buffer,r);
-	dieOnError("SERVER",connError(c));
-	printf("SERVER: written %d of %d requests bytes\n",w,r);
+	dieOnError(prefix,connError(c));
+	printf("%s: written %d of %d requests bytes\n",prefix,w,r);
 
     // Close the conn(ection)
 	if(connClose(c)) {
-		fprintf(stderr,"%s",(char*)connError(c));
-		return;
+		dieOnError(prefix,connError(c));
 	}
 }
 
-int server() {
+int server(char *type) {
 	Error err;
 	Address addr;
 	Serv s=NULL;
 	Conn c=NULL;
+	char prefix[64];
+	snprintf(prefix,64,"Server%s",type);
 	
 	// Initialization forced for Windows compatibility
 	commsInit(err);
-	dieOnError("SERVER",&err);
+	dieOnError(prefix,&err);
 
 	// TCP Server
-	s=servNew("tcp", ":1080", err);
-	dieOnError("SERVER",&err);
+	s=servNew(type, ":1080", err);
+	dieOnError(prefix,&err);
 
 	// What is the final Listen Address?
 	servAddress(s,addr);
-	printf("SERVER: Listens on %s\n",addr);
+	printf("%s: Listens on %s\n",prefix,addr);
 
 	// Listen for a connection
 	c=servListen(s);
-	dieOnError("SERVER",servError(s));
-	serve(c);
+	dieOnError(prefix,servError(s));
+	serve(c,type);
 
     // Close the server
 	if(servClose(s)) {
-		dieOnError("SERVER",servError(s));
+		dieOnError(prefix,servError(s));
 	}
 	return 0;
 }
 
 int main(int argc, char* argv[]) {
-	if(argc>1 && (argv[1][0]=='s' || argv[1][0]=='S')) {
-		return server();
+	if(argc>1 && strcmp(argv[1],"udp")==0) {
+		return client("udp");
+	} else if(argc>1 && strcmp(argv[1],"serverudp")==0) {
+		return server("udp");
+	} else if(argc>1 && strcmp(argv[1],"servertcp")==0) {
+		return server("tcp");
 	} else {
-		return client();
+		return client("tcp");
 	}
 }

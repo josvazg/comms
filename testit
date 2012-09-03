@@ -1,5 +1,7 @@
 #!/bin/bash
 export LD_LIBRARY_PATH=lib
-bin/test-comms s &
-bin/test-comms
+bin/test-comms servertcp &
+bin/test-comms tcp
+bin/test-comms serverudp &
+bin/test-comms udp
 

@@ -52,11 +52,23 @@ COMMS_API void connRemoteAddress(Conn conn, Address raddr);
 
 // connRead reads contents from conn to the given buffer buf (at most size bytes) and
 // returns the number of bytes read OR -1 and Conn's Error is set
+// connRead NEVER changes the conn remote address, not even WITH UDP sockets
+// if you need to know which UDP client you readed from, use connReadFrom instead
 COMMS_API int connRead(Conn conn, char* buf, int size);
 
 // connWrite writes contents from the buf buffer to Conn and
 // returns the number of bytes written OR -1 and Conn's Error is set
+// connWrite ALLWAYS sends to the conn remote address, even WITH UDP sockets
+// if you need to send to a different UDP recipient useryou readed from, use connReadFrom instead
 COMMS_API int connWrite(Conn conn, char* buf, int size);
+
+// connReadFrom reads contents from a remote UDP source
+// returns the number of bytes read and the source from address filled OR -1 and Conn's Error is set
+COMMS_API int connReadFrom(Conn conn, Address from, char* buf, int size);
+
+// connWriteTo writes contents of the buf buffer to the given remote UDP address 'to' and
+// returns the number of bytes written OR -1 and Conn's Error is set
+COMMS_API int connWriteTo(Conn conn, Address to, char* buf, int size);
 
 // connClose closes the Connection/Stream
 // On success it should return 0 and conn is no longer points to valid data, SO DON'T USE IT AGAIN!

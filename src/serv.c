@@ -78,6 +78,8 @@ Serv servNew(char* net, char* addr, Error err) {
     // create server on the given 'net' network
 	if(strcmp(net,"tcp")==0) { // tcp socket
 		serverTcp(serv,addr,err);
+	} else if(strcmp(net,"udp")==0) { // udp socket
+		serverUdp(serv,addr,err);
 	} else {
 		newError(err,"Unknown net '%s'!\n",net);
 		return NULL;
@@ -108,6 +110,9 @@ Conn servListen(Serv serv) {
 	Conn conn;
 	int len;
 	int sockfd;
+	if(serv->type==SOCKDGRAM_TYPE) {
+		//return udpListen(serv);
+	}
 	sockfd=accept(serv->s,NULL,NULL);
 	if(sockfd<0) {
 		Error e;
