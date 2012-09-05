@@ -78,8 +78,6 @@ Serv servNew(char* net, char* addr, Error err) {
     // create server on the given 'net' network
 	if(strcmp(net,"tcp")==0) { // tcp socket
 		serverTcp(serv,addr,err);
-	} else if(strcmp(net,"udp")==0) { // udp socket
-		serverUdp(serv,addr,err);
 	} else {
 		newError(err,"Unknown net '%s'!\n",net);
 		return NULL;
@@ -103,15 +101,16 @@ void servAddress(Serv serv, Address addr) {
 	sockAddress((Sock)serv,addr);
 }
 
-// servListen listens and returns any incomming connection to the given server
-// On any error, servListen returns NULL and Serv's Error is set
-Conn servListen(Serv serv) {
+// servAccept listens and returns any incomming connection to the given server
+// On any error, servAccept returns NULL and Serv's Error is set
+Conn servAccept(Serv serv) {
 	struct sockaddr* saddr;
 	Conn conn;
 	int len;
 	int sockfd;
-	if(serv->type==SOCKDGRAM_TYPE) {
-		//return udpListen(serv);
+	if(serv->type!=SOCKSTREAM_TYPE) {
+		newError(serv->e,"Can't Accept: this is not a stream socket!");
+		return NULL;
 	}
 	sockfd=accept(serv->s,NULL,NULL);
 	if(sockfd<0) {

@@ -21,14 +21,13 @@ const char *addr2text(LPSOCKADDR src, char *dst, int size);
   #include <netinet/in.h>
   #include <arpa/inet.h>
   #include <netdb.h>
-  #define MYERRNO errno 
-  #define error2string strerror_r
+  #define MYERRNO errno
 int closesocket(int socket);
 int commsInit(Error err);
 const char *addr2text(struct sockaddr* src, char *dst, socklen_t size);
 #endif
 
-#define ERRDESC(v) error2string(MYERRNO,v,MAX_ERROR_SIZE)
+#define ERRDESC(v) errortext(v)
 
 #define SOCKSTREAM_TYPE 1
 #define SOCKDGRAM_TYPE 2
@@ -76,3 +75,5 @@ int addrSize(int af);
 void writeAddress(Address addr, struct sockaddr* saddr);
 struct addrinfo* solveAddress(char* addr, Error err, int type, char* defaddr);
 void sockAddress(Sock sock, Address addr);
+const char* errortext(Error e);
+const char* addr2text(struct sockaddr* src, char *dst, socklen_t size);

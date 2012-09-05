@@ -62,6 +62,13 @@ COMMS_API int connRead(Conn conn, char* buf, int size);
 // if you need to send to a different UDP recipient useryou readed from, use connReadFrom instead
 COMMS_API int connWrite(Conn conn, char* buf, int size);
 
+// connListenMsgs creates a new datagram listener on a network 'net' (like 'udp') and address 'addr'
+// addr must be on the form "<address>:seviceOrPort" just like in connDial
+// when no address is specified servNew assumes "0.0.0.0" 
+// please use specific addresses for IPv6 such as [::0]:80
+// On any error, servNew returns NULL and err will have some error message filled in 
+COMMS_API Conn connListenMsgs(char* net, char* addr, Error err);
+
 // connReadFrom reads contents from a remote UDP source
 // returns the number of bytes read and the source from address filled OR -1 and Conn's Error is set
 COMMS_API int connReadFrom(Conn conn, Address from, char* buf, int size);
@@ -90,9 +97,9 @@ COMMS_API Error* servError(Serv Serv);
 // On any error, servListen returns NULL and Serv's Error is set
 COMMS_API void servAddress(Serv serv, Address addr);
 
-// servListen listens for new connections incoming to Server serv
-// On any error, servListen returns NULL and Serv's Error is set
-COMMS_API Conn servListen(Serv serv);
+// servAccept recives and accepts new connections incoming to Server serv
+// On any error, servAccept returns NULL and Serv's Error is set
+COMMS_API Conn servAccept(Serv serv);
 
 // servClose closes the Server
 // On success it should return 0 and serv is no longer points to valid data, SO DON'T USE IT AGAIN!

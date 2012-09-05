@@ -10,9 +10,16 @@ Error* ioError(IO io) {
 int ioRead(IO io, char* buf, int size) {
 	int readed=0;
 	io->e[0]='\0';
-	if(io->type==SOCKSTREAM_TYPE ||io->type==SOCKDGRAM_TYPE) {
+	if(io->type==SOCKSTREAM_TYPE) {
 		// WinXP (at least) doesn't support read on a socket, so we use recv instead
 		readed=recv(io->s, buf, size,0);
+	} else if(io->type==SOCKDGRAM_TYPE) {
+		Address from;
+		readed=connReadFrom((Conn)io,from,buf, size);
+		if(readed>=0 && strcmp(from,((Conn)io)->remote)!=0) {
+			newError(io->e,
+				"Data from unexpected source %s, you should be using ReadFrom instead!",from);
+		}
 	} else if(io->type==FILE_TYPE) {
 		readed=read(io->s, buf, size);
 	} else {
@@ -30,9 +37,11 @@ int ioRead(IO io, char* buf, int size) {
 int ioWrite(IO io, char* buf, int size) {
 	int written=0;
 	io->e[0]='\0';
-	if(io->type==SOCKSTREAM_TYPE ||io->type==SOCKDGRAM_TYPE) {
+	if(io->type==SOCKSTREAM_TYPE) {
 		// WinXP (at least) doesn't support write on a socket, so we use send instead
 		written=send(io->s, buf, size,0);
+	} else if(io->type==SOCKDGRAM_TYPE) {
+		written=connWriteTo((Conn)io,((Conn)io)->remote,buf, size);
 	} else if(io->type==FILE_TYPE) {
 		written=write(io->s, buf, size);
 	} else {

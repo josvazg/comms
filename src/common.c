@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "comms.h"
 #include "defs.h"
 
@@ -12,11 +13,11 @@ int commsInit(Error err) {
   	}
   	return r;
 }
-const char* error2string(int errcode, char *buf, int size) {
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,0,errcode,0,buf,size,0);
-	return buf;
+const char* errortext(int errcode, Error e) {
+	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,0,errcode,0,e,MAX_ERROR_SIZE,0);
+	return (const char*)e;
 }
-const char *addr2text(LPSOCKADDR src, char *dst, int size) {
+const char* addr2text(LPSOCKADDR src, char *dst, int size) {
 	int len=addrSize(src->sa_family);
 	if(!WSAAddressToString(src,len,NULL,dst,&size)) {
 		return dst;
@@ -29,22 +30,31 @@ int commsInit(Error err) {
 	err[0]='\0';
 	return 0;
 }
-const char *addr2text(struct sockaddr* src, char *dst, socklen_t size) {
+const char* errortext(Error e) {
+	e[0]='\0';
+	if(strerror_r(errno,e,MAX_ERROR_SIZE)!=0) {
+		return NULL;
+	}
+	return e;
+}
+const char* addr2text(struct sockaddr* src, char *dst, socklen_t size) {
 	int pos=0;
 	int port=-1;
 	if(src->sa_family==AF_INET) {
 		struct sockaddr_in *saddr=(struct sockaddr_in*)src;
 		inet_ntop(AF_INET, &saddr->sin_addr, dst, size);
 		port=ntohs(saddr->sin_port);
+		pos=strlen(dst);
+		snprintf(&dst[pos],MAX_ADDR_SIZE-pos,":%d",port);
 	} else if(src->sa_family==AF_INET6) {
+		Address a;
 		struct sockaddr_in6 *saddr=(struct sockaddr_in6*)src;
-		inet_ntop(AF_INET6, &saddr->sin6_addr, dst, size);
+		inet_ntop(AF_INET6, &saddr->sin6_addr, a, size);
 		port=ntohs(saddr->sin6_port);
+		snprintf(dst,MAX_ADDR_SIZE-pos,"[%s]:%d",a,port);
 	} else {
 		return NULL;
 	}
-	pos=strlen(dst);
-	snprintf(&dst[pos],MAX_ADDR_SIZE-pos,":%d",port);
 	return dst;
 }
 #endif

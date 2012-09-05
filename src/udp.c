@@ -3,6 +3,7 @@
 
 // dialUdp makes an UDP socket with a default remote address 'addr' or fills err
 void dialUdp(Conn conn, char* addr, Error err) {
+	int sockfd;
     struct addrinfo *result;
 	result=solveAddress(addr,err,SOCK_DGRAM,"localhost");
 	if(onError(err)) {
@@ -12,19 +13,37 @@ void dialUdp(Conn conn, char* addr, Error err) {
   		newError(err,"Unresolved address: %s",addr);
   		return;
   	}
+  	sockfd = socket(result->ai_family, result->ai_socktype,result->ai_protocol);
+  	if (sockfd<0) {
+  		Error e;
+  		newError(err,"Socket: %s",ERRDESC(e));
+  		return;
+	}
 	// Otherwise we are connected
+	conn->s=sockfd;
 	conn->type=SOCKDGRAM_TYPE;
 	conn->ver=result->ai_family;
 	writeAddress(conn->remote,result->ai_addr);
 	freeaddrinfo(result);
 }
 
-// serverUdp binds to a UDP server socket address 'addr' or fills err
-void serverUdp(Serv serv, char* addr, Error err) {
+// connListenMsgs creates a new datagram listener on a network 'net' (like 'udp') and address 'addr'
+Conn connListenMsgs(char* net, char* addr, Error err) {
+	Conn conn;
 	struct addrinfo *ainfo;
  	struct sockaddr* saddr;
 	int sockfd;
  	int reuseaddr=1;
+ 	if(strcmp(net,"udp")!=0) {
+ 		newError("Unsupported net '%s'\n",net);
+ 		return NULL;
+ 	}
+ 	conn=malloc(sizeof(struct Conn_S));
+ 	if(conn==NULL) {
+ 		Error e;
+  		newError(err,"Can't allocate %s connection: %s",net,ERRDESC(e));
+  		return;
+ 	}
   	// SOCKET
   	sockfd=socket(PF_INET,SOCK_DGRAM, 0);
   	if(sockfd<0) {
@@ -47,10 +66,11 @@ void serverUdp(Serv serv, char* addr, Error err) {
   		newError(err,"Bind: %s",ERRDESC(e));
   		return;
 	}
-	serv->type=SOCKDGRAM_TYPE;
-	serv->s=sockfd;
-	serv->ver=saddr->sa_family;
+	conn->type=SOCKDGRAM_TYPE;
+	conn->s=sockfd;
+	conn->ver=saddr->sa_family;
 	freeaddrinfo(ainfo);
+	return conn;
 }
 
 // connReadFrom reads contents from a remote UDP source
@@ -82,6 +102,7 @@ int connWriteTo(Conn conn, Address to, char* buf, int size) {
 	if(conn->type==SOCKDGRAM_TYPE) {
 		int written=0;
 		struct addrinfo *ainfo;
+		printf("solving %s...",to);
 		ainfo=solveAddress(to,conn->e,SOCK_DGRAM,"localhost");
 	  	if(onError(conn->e)) {
   			return;
