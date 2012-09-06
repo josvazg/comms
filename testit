@@ -1,8 +1,10 @@
 #!/bin/bash
 export LD_LIBRARY_PATH=lib
+killall test-comms
 echo TCP test...
 bin/test-comms servertcp &
 bin/test-comms tcp
+sleep 1
 echo UDP test...
 bin/test-comms serverudp &
 bin/test-comms udp

@@ -68,7 +68,7 @@ struct Serv_S{
   int ver;
 };
 
-/* Common helper functions */
+// Common helper functions 
 int onError(Error err);
 int last(char* s, char c);
 int addrSize(int af);
@@ -77,3 +77,8 @@ struct addrinfo* solveAddress(char* addr, Error err, int type, char* defaddr);
 void sockAddress(Sock sock, Address addr);
 const char* errortext(Error e);
 const char* addr2text(struct sockaddr* src, char *dst, socklen_t size);
+// Address functions
+int addrSize(int af);
+void writeAddress(Address addr, struct sockaddr* saddr);
+struct addrinfo* solveAddress(char* addr, Error err, int type, char* defaddr);
+void sockAddress(Sock sock, Address addr);

@@ -23,7 +23,7 @@ int client(char* type) {
 	snprintf(prefix,64,"Client%s",type);
 
 	// Connection
-	c=connDial(type, ":9980", err);
+	c=connDial(type, "127.0.0.1:9980", err);
 	dieOnError(prefix,&err);
 
 	// What is the final Local & Remote Address?
@@ -38,9 +38,14 @@ int client(char* type) {
 
 	// Read /recv data (the response)
 	for(r=0;(r=connRead(c,buffer,MAXBUF))>0;) {
+		printf("%s: receiving...\n",prefix);
 		buffer[r]='\0';
 		printf("%s",buffer);
 		total+=r;
+		if(strcmp(type,"udp")==0) {
+			// Udp can't wait for the connection to close... cause there is NO connection!
+			break;
+		}
 	}
 	printf("%s: %dbytes readed total!\n",prefix,total);
 
@@ -61,6 +66,7 @@ void serve(Conn c) {
 
 	// Read /recv data (the response)
 	if((r=connRead(c,buffer,MAXBUF))>0) {
+		printf("Servertcp: receiving...\n");
 		buffer[r]='\0';
 		printf("%s",buffer);
 	}
@@ -120,10 +126,10 @@ int serverUdp() {
 		char buffer[MAXBUF];
 		int r=0,w=0;
 		Address raddr;
-
 		// Read /recv data (the response)
 		if((r=connReadFrom(c,raddr,buffer,MAXBUF))>0) {
 			buffer[r]='\0';
+			printf("Serverudp: receiving...\n");
 			printf("%s",buffer);
 		}
 		printf("Serverudp: %dbytes readed!\n",r);

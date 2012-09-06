@@ -77,14 +77,12 @@ Conn connListenMsgs(char* net, char* addr, Error err) {
 int connReadFrom(Conn conn, Address from, char* buf, int size) {
 	if(conn->type==SOCKDGRAM_TYPE) {
 		int readed=0;
-		struct sockaddr* saddr;
-		int len=addrSize(conn->ver);
-		saddr=(struct sockaddr*)alloca(len);
-		if(saddr==NULL) {
-			Error e;
-			newError(conn->e,"Can't allocate remote address: %s\n",ERRDESC(e));
-		}
-		readed=recvfrom(conn->s, buf, size,0, saddr, &len);
+		struct sockaddr_in6 addrbuf;
+		struct sockaddr* saddr=&addrbuf;
+		int len=sizeof(addrbuf);
+		/*printf("Recv From socket %d on buffer %p size %d from addr %p len %d\n",
+			conn->s, buf, size, saddr, len);*/
+		readed=recvfrom(conn->s, buf, size, 0, saddr, &len);
 		if(readed<0) {
 			Error e;
 			newError(conn->e,"Recvfrom error %s\n",ERRDESC(e));
@@ -102,7 +100,6 @@ int connWriteTo(Conn conn, Address to, char* buf, int size) {
 	if(conn->type==SOCKDGRAM_TYPE) {
 		int written=0;
 		struct addrinfo *ainfo;
-		printf("solving %s...",to);
 		ainfo=solveAddress(to,conn->e,SOCK_DGRAM,"localhost");
 	  	if(onError(conn->e)) {
   			return;
@@ -111,6 +108,11 @@ int connWriteTo(Conn conn, Address to, char* buf, int size) {
   			newError(conn->e,"Unresolved address: %s",to);
   			return;
 	  	}
+	  	/*{
+	  		Address na;
+	  		writeAddress(na,ainfo->ai_addr);
+	  		printf("SEND/WRITE socket=%d buf=%p size=%d addr=%s\n",conn->s,buf,size,na);
+	  	}*/
 		written=sendto(conn->s, buf, size, 0, ainfo->ai_addr, ainfo->ai_addrlen);
 		if(written<0) {
 			Error e;
