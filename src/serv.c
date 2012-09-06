@@ -148,3 +148,13 @@ Conn servAccept(Serv serv) {
 int servClose(Serv serv) {
 	return ioClose((IO)serv);
 }
+
+// servFd returns the underlying file descriptor in case you need to do something fancy with it
+int servFd(Serv serv) {
+	return serv->s;
+}
+
+// servClone returns a clone of this Serv to be used safely from another thread
+Serv servClone(Serv serv) {
+	return (Serv)ioClone((IO)serv);
+}

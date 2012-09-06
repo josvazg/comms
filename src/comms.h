@@ -82,6 +82,13 @@ COMMS_API int connWriteTo(Conn conn, Address to, char* buf, int size);
 // On failure it returns a non zero value and Conn's Error is set
 COMMS_API int connClose(Conn conn);
 
+// connFd returns the underlying file descriptor in case you need to do something fancy with it
+COMMS_API int connFd(Conn conn);
+
+// connClone returns a clone of this connection to be used safely from another thread
+// On failure it returns NULL and an Error is set
+COMMS_API Conn connClone(Conn conn);
+
 // servNew creates a new server on a network 'net' and address 'addr'
 // addr must be on the form "<address>:seviceOrPort" just like in connDial
 // when no address is specified servNew assumes "0.0.0.0" 
@@ -106,6 +113,13 @@ COMMS_API Conn servAccept(Serv serv);
 // On failure it returns a non zero value and Serv's Error is set
 COMMS_API int servClose(Serv Serv);
 
+// servFd returns the underlying file descriptor in case you need to do something fancy with it
+COMMS_API int servFd(Serv serv);
+
+// servClone returns a clone of this Serv to be used safely from another thread
+// On failure it returns NULL and an Error is set
+COMMS_API Serv servClone(Serv serv);
+
 // ioError returns the latest IO Error
 // use onError(ioError(req)) to test for IO errors
 COMMS_API Error* ioError(IO io);
@@ -122,3 +136,10 @@ COMMS_API int ioWrite(IO io, char* buf, int size);
 // On success it should return 0 and io no longer points to valid data, SO DON'T USE IT AGAIN!
 // On failure it returns a non zero value and IO's Error is set
 COMMS_API int ioClose(IO io);
+
+// ioFd returns the underlying file descriptor in case you need to do something fancy with it
+COMMS_API int ioFd(IO io);
+
+// ioClone returns a clone of this IO to be used safely from another thread
+// On failure it returns NULL and an Error is set
+COMMS_API IO ioClone(IO io);

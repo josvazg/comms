@@ -106,4 +106,14 @@ int connClose(Conn conn) {
 	return ioClose((IO)conn);
 }
 
+// connFd returns the underlying file descriptor in case you need to do something fancy with it
+int connFd(Conn conn) {
+	return conn->s;
+}
+
+// connClone returns a clone of this Conn to be used safely from another thread
+Conn connClone(Conn conn) {
+	return (Conn)ioClone((IO)conn);
+}
+
 

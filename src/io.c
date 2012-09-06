@@ -67,3 +67,21 @@ int ioClose(IO io) {
 	free(io);
 	return 0;
 }
+
+// ioFd returns the underlying file descriptor in case you need to do something fancy with it
+int ioFd(IO io) {
+	return io->s;
+}
+
+// ioClone returns a clone of this IO to be used safely from another thread
+IO ioClone(IO io) {
+	int size=sizeOfType(io->type);
+	IO io2=malloc(size);
+	if(io2==NULL) {
+		Error e;
+		newError(io->e,"Close: %s\n",ERRDESC(e));
+		return NULL;
+	}
+	memcpy(io2,io,size);
+	return io2;
+}
